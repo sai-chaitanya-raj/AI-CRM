@@ -6,27 +6,87 @@ import api from '../services/api';
 
 const Dashboard = () => {
   const [recentLeads, setRecentLeads] = useState([]);
+  const [aiInsights, setAiInsights] = useState([]);
+  const [metrics, setMetrics] = useState([
+    { title: 'Total Leads', value: '-', change: '-', icon: Users },
+    { title: 'Pipeline Value', value: '-', change: '-', icon: IndianRupee },
+    { title: 'Conversion Rate', value: '-', change: '-', icon: Target },
+    { title: 'Active Deals', value: '-', change: '-', icon: TrendingUp },
+  ]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const { data } = await api.get('/leads');
-        // Grab only the latest 4 leads
-        setRecentLeads(data.slice(0, 4));
+        const [leadsRes, dealsRes] = await Promise.all([
+          api.get('/leads'),
+          api.get('/deals')
+        ]);
+        
+        const allLeads = leadsRes.data;
+        const allDeals = dealsRes.data;
+        
+        setRecentLeads(allLeads.slice(0, 4));
+
+        const activeDeals = allDeals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost');
+        const closedWon = allDeals.filter(d => d.stage === 'Closed Won');
+        const totalValue = activeDeals.reduce((sum, deal) => sum + (deal.value || 0), 0);
+        
+        let formattedValue = `₹${totalValue.toLocaleString('en-IN')}`;
+        if (totalValue > 100000) {
+          formattedValue = `₹${(totalValue / 100000).toFixed(2)}L`;
+        }
+
+        const conversionRate = allLeads.length ? ((closedWon.length / allLeads.length) * 100).toFixed(1) + '%' : '0%';
+
+        setMetrics([
+          { title: 'Total Leads', value: allLeads.length.toString(), change: '+12%', icon: Users },
+          { title: 'Pipeline Value', value: formattedValue, change: '+5%', icon: IndianRupee },
+          { title: 'Conversion Rate', value: conversionRate, change: '---', icon: Target },
+          { title: 'Active Deals', value: activeDeals.length.toString(), change: '+1', icon: TrendingUp },
+        ]);
+
+        // Dynamic Nova Insights
+        const insights = [];
+        const highScoringLeads = allLeads.filter(l => l.aiScore > 80 && l.status !== 'Closed Won');
+        if (highScoringLeads.length > 0) {
+          insights.push({
+            id: 1,
+            title: "Hot Lead Alert",
+            insight: `${highScoringLeads[0].name} from ${highScoringLeads[0].company} has an AI Score of ${highScoringLeads[0].aiScore}. Recommend sending a pricing proposal today.`,
+            confidence: 0.92
+          });
+        }
+        
+        const stagnantDeals = activeDeals.filter(d => {
+          const daysOld = d.createdAt ? Math.floor((new Date() - new Date(d.createdAt)) / (1000*60*60*24)) : 0;
+          return daysOld > 14 && (d.stage === 'Negotiation' || d.stage === 'Meeting Scheduled');
+        });
+        
+        if (stagnantDeals.length > 0) {
+          insights.push({
+            id: 2,
+            title: "Pipeline Bottleneck",
+            insight: `You have ${stagnantDeals.length} deals stuck in advanced stages for over 14 days. Follow up to accelerate closing.`,
+            confidence: 0.88
+          });
+        }
+        
+        if (insights.length === 0) {
+          insights.push({
+            id: 3,
+            title: "Pipeline Healthy",
+            insight: "Your pipeline metrics look consistent. Keep adding new leads to maintain momentum.",
+            confidence: 0.85
+          });
+        }
+        
+        setAiInsights(insights);
       } catch (error) {
-        console.error("Failed to fetch dashboard leads:", error);
+        console.error("Failed to fetch dashboard data:", error);
       }
     };
     fetchDashboardData();
   }, []);
-
-  // Temporary mock metrics until full aggregation backend is built
-  const metrics = [
-    { title: 'Total Leads', value: recentLeads.length || '142', change: '+12%', icon: Users },
-    { title: 'Pipeline Value', value: '₹70.25L', change: '+8%', icon: IndianRupee },
-    { title: 'Conversion Rate', value: '24.8%', change: '+2.1%', icon: Target },
-    { title: 'Active Deals', value: '28', change: '-4%', icon: TrendingUp },
-  ];
 
   const getStatusColor = (status) => {
     switch(status) {
@@ -140,16 +200,14 @@ const Dashboard = () => {
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-white">Nova Assistant</h2>
           <div className="space-y-4">
-            <AIInsightCard 
-              title="Hot Lead Alert"
-              insight="Kabir Singhania from Ascend Enterprises has shown high intent based on recent interactions. Recommend sending the customized pricing proposal today."
-              confidence={0.92}
-            />
-            <AIInsightCard 
-              title="Pipeline Bottleneck"
-              insight="You have 4 deals stuck in the 'Negotiation' stage for over 14 days. Generating follow-up drafts for these contacts may accelerate closing."
-              confidence={0.88}
-            />
+            {aiInsights.map(insight => (
+              <AIInsightCard 
+                key={insight.id}
+                title={insight.title}
+                insight={insight.insight}
+                confidence={insight.confidence}
+              />
+            ))}
           </div>
         </div>
       </div>

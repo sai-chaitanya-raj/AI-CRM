@@ -51,3 +51,39 @@ exports.deleteDeal = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Auto Sort Deals based on AI heuristics
+// @route   POST /api/deals/auto-sort
+exports.autoSortDeals = async (req, res) => {
+  try {
+    const deals = await Deal.find({ createdBy: req.user._id }).populate('leadId', 'aiScore');
+    let updatedCount = 0;
+
+    for (const deal of deals) {
+      if (!deal.leadId) continue;
+      
+      let newStage = deal.stage;
+      const score = deal.leadId.aiScore || 0;
+
+      if (deal.stage === 'New Lead' && score >= 75) {
+        newStage = 'Contacted';
+      } else if (deal.stage === 'Contacted' && score >= 85) {
+        newStage = 'Meeting Scheduled';
+      }
+
+      if (deal.stage === 'Meeting Scheduled' && deal.value >= 100000) {
+        newStage = 'Negotiation';
+      }
+
+      if (newStage !== deal.stage) {
+        deal.stage = newStage;
+        await deal.save();
+        updatedCount++;
+      }
+    }
+
+    res.json({ message: `AI successfully optimized ${updatedCount} deals.`, updatedCount });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

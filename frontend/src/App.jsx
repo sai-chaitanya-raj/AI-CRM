@@ -4,6 +4,9 @@ import Dashboard from './pages/Dashboard';
 import Pipelines from './pages/Pipelines';
 import Leads from './pages/Leads';
 import Login from './pages/Login';
+import Tasks from './pages/Tasks';
+import Analytics from './pages/Analytics';
+import Settings from './pages/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -17,6 +20,9 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="leads" element={<Leads />} />
             <Route path="pipeline" element={<Pipelines />} />
+            <Route path="tasks" element={<Tasks />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Route>

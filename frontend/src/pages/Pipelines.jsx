@@ -5,11 +5,11 @@ import api from '../services/api';
 
 const COLUMNS = ['New Lead', 'Contacted', 'Meeting Scheduled', 'Negotiation', 'Closed Won', 'Closed Lost'];
 
-const initialEmptyData = COLUMNS.reduce((acc, col) => ({ ...acc, [col]: [] }), {});
 
 const Pipelines = () => {
-  const [columns, setColumns] = useState(initialEmptyData);
+  const [columns, setColumns] = useState(COLUMNS.reduce((acc, col) => ({ ...acc, [col]: [] }), {}));
   const [loading, setLoading] = useState(true);
+  const [isSorting, setIsSorting] = useState(false);
 
   useEffect(() => {
     fetchDeals();
@@ -20,15 +20,19 @@ const Pipelines = () => {
       setLoading(true);
       const { data } = await api.get('/deals');
       
-      const organizedData = { ...initialEmptyData };
+      const organizedData = COLUMNS.reduce((acc, col) => ({ ...acc, [col]: [] }), {});
       data.forEach(deal => {
         if (organizedData[deal.stage]) {
+          const daysOld = deal.createdAt 
+            ? Math.floor((new Date() - new Date(deal.createdAt)) / (1000 * 60 * 60 * 24))
+            : 0;
+            
           organizedData[deal.stage].push({
             id: deal._id,
             title: deal.title,
             value: `₹${deal.value.toLocaleString('en-IN')}`,
             company: deal.leadId?.company || 'Unknown',
-            createdAt: deal.createdAt
+            daysOld: daysOld
           });
         }
       });
@@ -37,6 +41,20 @@ const Pipelines = () => {
       console.error("Error fetching deals:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAutoSort = async () => {
+    try {
+      setIsSorting(true);
+      const { data } = await api.post('/deals/auto-sort');
+      alert(`AI Sort Complete: ${data.message}`);
+      await fetchDeals(); // Refresh pipelines view
+    } catch (error) {
+      console.error("Auto sort failed:", error);
+      alert('AI Auto Sort failed.');
+    } finally {
+      setIsSorting(false);
     }
   };
 
@@ -82,9 +100,13 @@ const Pipelines = () => {
           <h1 className="text-2xl font-bold text-white tracking-tight">Deal Pipeline</h1>
           <p className="text-gray-400 text-sm mt-1">Drag and drop deals to update their stage.</p>
         </div>
-        <button className="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-primary-500/20 flex items-center">
-          <Sparkles className="h-4 w-4 mr-2" /> 
-          AI Auto-Sort
+        <button 
+          onClick={handleAutoSort}
+          disabled={isSorting}
+          className="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-primary-500/20 flex items-center disabled:opacity-50"
+        >
+          <Sparkles className={`h-4 w-4 mr-2 ${isSorting ? 'animate-spin' : ''}`} /> 
+          {isSorting ? 'Sorting...' : 'AI Auto-Sort'}
         </button>
       </div>
 
@@ -130,14 +152,13 @@ const Pipelines = () => {
                                 </button>
                               </div>
                               <div className="text-xs text-gray-400 mb-3">{deal.company}</div>
-                              
-                              <div className="flex items-center justify-between border-t border-gray-700/50 pt-3">
-                                <span className="text-primary-400 font-semibold text-sm">{deal.value}</span>
-                                <div className="flex items-center text-xs text-gray-500">
-                                  <Calendar className="h-3 w-3 mr-1" />
-                                  12d
+                                                            <div className="flex items-center justify-between border-t border-gray-700/50 pt-3">
+                                  <span className="text-primary-400 font-semibold text-sm">{deal.value}</span>
+                                  <div className="flex items-center text-xs text-gray-500">
+                                    <Calendar className="h-3 w-3 mr-1" />
+                                    {deal.daysOld}d
+                                  </div>
                                 </div>
-                              </div>
                             </div>
                           )}
                         </Draggable>

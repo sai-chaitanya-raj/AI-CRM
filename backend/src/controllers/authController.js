@@ -26,6 +26,8 @@ exports.registerUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
+        authProvider: user.authProvider,
         token: generateToken(user._id),
       });
     } else {
@@ -48,6 +50,8 @@ exports.authUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
+        authProvider: user.authProvider,
         token: generateToken(user._id),
       });
     } else {
@@ -80,6 +84,7 @@ exports.googleLogin = async (req, res) => {
         name,
         email,
         passwordHash: sub, // Using Google sub ID as placeholder password
+        authProvider: 'google'
       });
     }
 
@@ -87,6 +92,8 @@ exports.googleLogin = async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      role: user.role,
+      authProvider: user.authProvider,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -142,6 +149,7 @@ exports.updateProfile = async (req, res) => {
         company: updatedUser.company,
         emailPreferences: updatedUser.emailPreferences,
         role: updatedUser.role,
+        authProvider: updatedUser.authProvider,
         token: generateToken(updatedUser._id) // re-issue token if email changed
       });
     } else {

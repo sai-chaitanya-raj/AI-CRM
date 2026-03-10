@@ -200,9 +200,6 @@ const Leads = () => {
                         {generatingFor === (lead._id || lead.id) ? 'Drafting...' : 'AI Email'}
                       </span>
                     </button>
-                    <button className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md transition-colors">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
                   </div>
                 </td>
               </tr>

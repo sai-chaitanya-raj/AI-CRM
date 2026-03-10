@@ -6,7 +6,8 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   passwordHash: { type: String, required: true },
   role: { type: String, enum: ['admin', 'user'], default: 'user' },
-  company: { type: String, default: 'Uptiq.ai' },
+  authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
+  company: { type: String, default: '' },
   emailPreferences: {
     dailyDigest: { type: Boolean, default: true },
     aiAlerts: { type: Boolean, default: true },

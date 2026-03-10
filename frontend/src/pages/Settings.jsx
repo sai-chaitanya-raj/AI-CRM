@@ -17,7 +17,8 @@ const Settings = () => {
     name: '',
     email: '',
     company: '',
-    role: 'user'
+    role: 'user',
+    authProvider: 'local'
   });
 
   const [emailPrefs, setEmailPrefs] = useState({
@@ -42,7 +43,8 @@ const Settings = () => {
           name: data.name || '',
           email: data.email || '',
           company: data.company || '',
-          role: data.role || 'user'
+          role: data.role || 'user',
+          authProvider: data.authProvider || 'local'
         });
         if (data.emailPreferences) {
           setEmailPrefs(prev => ({
@@ -90,9 +92,14 @@ const Settings = () => {
           dailyDigest: emailPrefs.dailyDigest,
           aiAlerts: emailPrefs.aiAlerts,
           marketing: emailPrefs.marketing
-        },
-        currentPassword: password
+        }
       };
+
+      if (profile.authProvider === 'google') {
+        updateData.password = password; // Set password for the first time
+      } else {
+        updateData.currentPassword = password; // Validate current password
+      }
 
       const { data } = await api.put('/auth/profile', updateData);
       
@@ -136,8 +143,7 @@ const Settings = () => {
           {[
             { id: 'profile', icon: User, label: 'Profile' },
             { id: 'notifications', icon: Bell, label: 'Notifications' },
-            { id: 'security', icon: Shield, label: 'Security' },
-            { id: 'appearance', icon: Paintbrush, label: 'Appearance' },
+            { id: 'security', icon: Shield, label: 'Security' }
           ].map(tab => (
             <button 
               key={tab.id}
@@ -253,54 +259,6 @@ const Settings = () => {
                     <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                   </label>
                 </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-gray-200 font-medium">Login Alerts</h4>
-                    <p className="text-sm text-gray-500 mt-1">Get notified when someone logs into your account from a new device.</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" checked={security.loginAlerts} onChange={() => setSecurity({...security, loginAlerts: !security.loginAlerts})} />
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
-                  </label>
-                </div>
-              </div>
-
-              <div className="mt-8 p-4 bg-primary-900/20 border border-primary-500/30 rounded-lg flex items-start">
-                <AlertTriangle className="h-5 w-5 text-primary-400 mr-3 shrink-0 mt-0.5" />
-                <p className="text-sm text-primary-200/80">
-                  Password changes are handled via your profile settings. For Google OAuth users, your password is managed by your Google Account.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'appearance' && (
-            <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6 backdrop-blur-sm shadow-xl animate-in slide-in-from-right-4">
-              <h3 className="text-lg font-semibold text-white mb-6 border-b border-gray-700/50 pb-4">Theme Preferences</h3>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <button 
-                  onClick={() => setAppearance('light')}
-                  className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${appearance === 'light' ? 'border-primary-500 bg-primary-500/10' : 'border-gray-700 bg-gray-900 hover:border-gray-500'}`}
-                >
-                  <Sun className={`h-8 w-8 mb-3 ${appearance === 'light' ? 'text-primary-400' : 'text-gray-500'}`} />
-                  <span className={`font-medium ${appearance === 'light' ? 'text-primary-400' : 'text-gray-400'}`}>Light</span>
-                </button>
-                <button 
-                  onClick={() => setAppearance('dark')}
-                  className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${appearance === 'dark' ? 'border-primary-500 bg-primary-500/10' : 'border-gray-700 bg-gray-900 hover:border-gray-500'}`}
-                >
-                  <Moon className={`h-8 w-8 mb-3 ${appearance === 'dark' ? 'text-primary-400' : 'text-gray-500'}`} />
-                  <span className={`font-medium ${appearance === 'dark' ? 'text-primary-400' : 'text-gray-400'}`}>Dark</span>
-                </button>
-                <button 
-                  onClick={() => setAppearance('system')}
-                  className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${appearance === 'system' ? 'border-primary-500 bg-primary-500/10' : 'border-gray-700 bg-gray-900 hover:border-gray-500'}`}
-                >
-                  <Monitor className={`h-8 w-8 mb-3 ${appearance === 'system' ? 'text-primary-400' : 'text-gray-500'}`} />
-                  <span className={`font-medium ${appearance === 'system' ? 'text-primary-400' : 'text-gray-400'}`}>System</span>
-                </button>
               </div>
             </div>
           )}
@@ -324,14 +282,16 @@ const Settings = () => {
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95">
             <h3 className="text-xl font-bold text-white mb-2 flex items-center">
               <Key className="h-5 w-5 mr-2 text-primary-500" />
-              Confirm Action
+              {profile.authProvider === 'google' ? 'Set Password' : 'Confirm Action'}
             </h3>
             <p className="text-gray-400 text-sm mb-6">
-              Please enter your current password to save these changes to your profile. (For Google OAuth, this overrides validation).
+              {profile.authProvider === 'google' 
+                ? "As a Google Auth user, please set a password to save profile changes. You can use this later to login manually."
+                : "Please enter your current password to save these changes to your profile."}
             </p>
             <input 
               type="password" 
-              placeholder="Confirm Password"
+              placeholder={profile.authProvider === 'google' ? "Enter new password" : "Confirm current Password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white mb-6 focus:ring-2 focus:ring-primary-500 focus:outline-none"

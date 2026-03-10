@@ -127,7 +127,7 @@ const Leads = () => {
           </thead>
           <tbody className="divide-y divide-gray-700/50">
             {filteredLeads.map((lead) => (
-              <tr key={lead.id} className="hover:bg-gray-800/60 transition-colors group">
+              <tr key={lead._id || lead.id} className="hover:bg-gray-800/60 transition-colors group">
                 <td className="py-4 px-6">
                   <div className="flex items-center space-x-3">
                     <div className="h-9 w-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-medium text-gray-300">
@@ -165,17 +165,17 @@ const Leads = () => {
                 <td className="py-4 px-6 text-right">
                   <div className="flex items-center justify-end space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
-                      onClick={() => handleGenerateEmail(lead.id)}
-                      disabled={generatingFor === lead.id}
+                      onClick={() => handleGenerateEmail(lead._id || lead.id)}
+                      disabled={generatingFor === (lead._id || lead.id)}
                       className="flex items-center space-x-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-gray-700/50 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-600/50 transition-all focus:outline-none focus:ring-2 focus:ring-primary-500/50 disabled:opacity-50"
                     >
-                      {generatingFor === lead.id ? (
+                      {generatingFor === (lead._id || lead.id) ? (
                         <Sparkles className="h-3.5 w-3.5 text-primary-400 animate-pulse" />
                       ) : (
                         <Mail className="h-3.5 w-3.5 text-gray-400" />
                       )}
                       <span>
-                        {generatingFor === lead.id ? 'Drafting...' : 'AI Email'}
+                        {generatingFor === (lead._id || lead.id) ? 'Drafting...' : 'AI Email'}
                       </span>
                     </button>
                     <button className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md transition-colors">

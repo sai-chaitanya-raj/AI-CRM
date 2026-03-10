@@ -11,7 +11,10 @@ const Leads = () => {
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailDraft, setEmailDraft] = useState({ subject: 'Following up', body: '', leadId: null, leadName: '' });
   const [newLead, setNewLead] = useState({
     name: '',
     email: '',
@@ -50,18 +53,37 @@ const Leads = () => {
     }
   };
 
-  const handleGenerateEmail = async (id) => {
+  const handleGenerateEmail = async (id, name) => {
     setGeneratingFor(id);
     try {
       const { data } = await api.post(`/ai/lead/${id}/email`, { 
         context: 'Write a warm, professional introduction email to schedule a 15 min discovery call.' 
       });
-      alert('AI Email Draft Generated:\n\n' + data.draft);
+      setEmailDraft({ subject: `Following up with ${name}`, body: data.draft, leadId: id, leadName: name });
+      setIsEmailModalOpen(true);
     } catch (error) {
       console.error("Error generating email:", error);
       alert('Failed to generate email.');
     } finally {
       setGeneratingFor(null);
+    }
+  };
+
+  const handleSendEmail = async (e) => {
+    e.preventDefault();
+    setIsSendingEmail(true);
+    try {
+      const { data } = await api.post(`/leads/${emailDraft.leadId}/send-email`, {
+        subject: emailDraft.subject,
+        body: emailDraft.body
+      });
+      alert(`Email sent successfully!${data.previewUrl ? `\n\nPreview (Ethereal test mode): ${data.previewUrl}` : ''}`);
+      setIsEmailModalOpen(false);
+      fetchLeads(); // Refresh to update status to Contacted
+    } catch (error) {
+      alert('Failed to send email: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -165,7 +187,7 @@ const Leads = () => {
                 <td className="py-4 px-6 text-right">
                   <div className="flex items-center justify-end space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
-                      onClick={() => handleGenerateEmail(lead._id || lead.id)}
+                      onClick={() => handleGenerateEmail(lead._id || lead.id, lead.name)}
                       disabled={generatingFor === (lead._id || lead.id)}
                       className="flex items-center space-x-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-gray-700/50 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-600/50 transition-all focus:outline-none focus:ring-2 focus:ring-primary-500/50 disabled:opacity-50"
                     >
@@ -305,6 +327,86 @@ const Leads = () => {
                         Saving...
                       </>
                     ) : 'Save Customer'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Review & Send Email Modal */}
+      <AnimatePresence>
+        {isEmailModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-700/50 flex justify-between items-center bg-gray-800/50">
+                <h3 className="text-xl font-bold text-white tracking-tight">Review and Send AI Email</h3>
+                <button 
+                  onClick={() => setIsEmailModalOpen(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <form onSubmit={handleSendEmail} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">To</label>
+                  <input 
+                    type="text" 
+                    readOnly
+                    value={emailDraft.leadName}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-gray-400 focus:outline-none cursor-not-allowed"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Subject</label>
+                  <input 
+                    type="text"
+                    required 
+                    value={emailDraft.subject}
+                    onChange={e => setEmailDraft({...emailDraft, subject: e.target.value})}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Email Body</label>
+                  <textarea 
+                    required 
+                    rows={8}
+                    value={emailDraft.body}
+                    onChange={e => setEmailDraft({...emailDraft, body: e.target.value})}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-sans resize-y"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end space-x-3">
+                  <button 
+                    type="button"
+                    onClick={() => setIsEmailModalOpen(false)}
+                    className="px-4 py-2.5 text-sm font-medium text-gray-300 hover:text-white transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={isSendingEmail}
+                    className="bg-primary-600 hover:bg-primary-500 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-lg shadow-primary-500/20 disabled:opacity-50 flex items-center"
+                  >
+                    {isSendingEmail ? (
+                      <>
+                        <Sparkles className="animate-spin h-4 w-4 mr-2" />
+                        Sending...
+                      </>
+                    ) : 'Send Email'}
                   </button>
                 </div>
               </form>

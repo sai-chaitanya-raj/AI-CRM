@@ -92,3 +92,36 @@ exports.deleteLead = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+const mailService = require('../services/mailService');
+
+// @desc    Send an email to a lead
+// @route   POST /api/leads/:id/send-email
+exports.sendLeadEmail = async (req, res) => {
+  try {
+    const { subject, body } = req.body;
+    const lead = await Lead.findById(req.params.id);
+    
+    if (!lead || lead.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ message: 'Lead not found' });
+    }
+
+    if (!lead.email) {
+      return res.status(400).json({ message: 'Lead has no email address' });
+    }
+
+    const emailSubject = subject || `Follow up - ${lead.company}`;
+    const result = await mailService.sendEmail(lead.email, emailSubject, body);
+    
+    // Auto-update deal stage to Contacted if it exists
+    await Deal.findOneAndUpdate({ leadId: lead._id, stage: 'New Lead' }, { stage: 'Contacted' });
+    
+    // Update lead status
+    lead.status = 'Contacted';
+    await lead.save();
+
+    res.json({ message: 'Email sent successfully', previewUrl: result.previewUrl });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -5,13 +5,16 @@ const {
   getLeadById, 
   createLead, 
   updateLead, 
-  deleteLead 
+  deleteLead,
+  sendLeadEmail
 } = require('../controllers/leadController');
 const { protect } = require('../middlewares/auth');
 
 router.route('/')
   .get(protect, getLeads)
   .post(protect, createLead);
+
+router.post('/:id/send-email', protect, sendLeadEmail);
 
 router.route('/:id')
   .get(protect, getLeadById)

@@ -1,9 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Users, Trello, CheckSquare, BarChart2, Settings, Sparkles } from 'lucide-react';
 import { cn } from '../utils/utils';
+import useAuthStore from '../store/authStore';
 
 const Sidebar = () => {
   const location = useLocation();
+  const { user } = useAuthStore();
 
   const navItems = [
     { label: 'Dashboard', icon: Home, path: '/' },
@@ -54,15 +56,15 @@ const Sidebar = () => {
 
       {/* User Profile Snippet (Bottom) */}
       <div className="p-4 border-t border-gray-800">
-        <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer">
+        <Link to="/settings" className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer block">
           <div className="h-9 w-9 bg-gradient-to-tr from-primary-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold shadow-inner">
-            SC
+            {user?.name ? user.name.substring(0, 2).toUpperCase() : 'US'}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-200">Sai Chaitanya</span>
-            <span className="text-xs text-gray-500">Free Plan</span>
+            <span className="text-sm font-medium text-gray-200">{user?.name || 'User'}</span>
+            <span className="text-xs text-gray-500">{user?.company || 'Uptiq.ai'}</span>
           </div>
-        </div>
+        </Link>
       </div>
     </aside>
   );

@@ -6,6 +6,11 @@ import api from '../services/api';
 const Analytics = () => {
   const [dealData, setDealData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [metrics, setMetrics] = useState([
+    { title: "Win Rate", value: "-", trend: "-", icon: TrendingUp },
+    { title: "Avg Deal Cycle", value: "-", trend: "-", icon: Activity },
+    { title: "Pipeline Velocity", value: "-", trend: "-", icon: PieChart }
+  ]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -34,6 +39,29 @@ const Analytics = () => {
         }));
 
         setDealData(chartData);
+
+        // Dynamic KPI calculations
+        const wonDeals = data.filter(d => d.stage === 'Closed Won');
+        const closedDeals = data.filter(d => d.stage === 'Closed Won' || d.stage === 'Closed Lost');
+        const activeDeals = data.filter(d => d.stage !== 'Closed Lost' && d.stage !== 'Closed Won');
+        
+        const winRate = closedDeals.length > 0 ? ((wonDeals.length / closedDeals.length) * 100).toFixed(1) + '%' : '0%';
+        
+        let totalCycleDays = 0;
+        wonDeals.forEach(d => {
+          const start = new Date(d.createdAt);
+          const end = new Date(d.updatedAt);
+          totalCycleDays += (end - start) / (1000 * 60 * 60 * 24);
+        });
+        const avgCycle = wonDeals.length > 0 ? Math.round(totalCycleDays / wonDeals.length) + ' Days' : 'N/A';
+        const velocity = activeDeals.length > 5 ? 'High' : (activeDeals.length > 0 ? 'Steady' : 'Low');
+
+        setMetrics([
+          { title: "Win Rate", value: winRate, trend: "Live", icon: TrendingUp },
+          { title: "Avg Deal Cycle", value: avgCycle, trend: "Live", icon: Activity },
+          { title: "Pipeline Velocity", value: velocity, trend: "Live", icon: PieChart }
+        ]);
+
       } catch (error) {
         console.error("Error fetching analytics:", error);
       } finally {
@@ -54,11 +82,7 @@ const Analytics = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {[
-          { title: "Win Rate", value: "32.4%", trend: "+5.2%", icon: TrendingUp },
-          { title: "Avg Deal Cycle", value: "18 Days", trend: "-2 Days", icon: Activity },
-          { title: "Pipeline Velocity", value: "High", trend: "Steady", icon: PieChart }
-        ].map((stat, i) => (
+        {metrics.map((stat, i) => (
           <div key={i} className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6 backdrop-blur-sm flex items-center">
             <div className="bg-gray-800 p-3 rounded-lg mr-4">
               <stat.icon className="h-6 w-6 text-primary-400" />
@@ -67,7 +91,7 @@ const Analytics = () => {
               <p className="text-gray-400 text-sm">{stat.title}</p>
               <div className="flex items-baseline space-x-2">
                 <h3 className="text-2xl font-bold text-white">{stat.value}</h3>
-                <span className="text-xs text-green-400 font-medium">{stat.trend}</span>
+                <span className="text-xs text-primary-400 font-medium">{stat.trend}</span>
               </div>
             </div>
           </div>

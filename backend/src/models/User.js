@@ -5,7 +5,13 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   passwordHash: { type: String, required: true },
-  role: { type: String, enum: ['admin', 'user'], default: 'user' }
+  role: { type: String, enum: ['admin', 'user'], default: 'user' },
+  company: { type: String, default: 'Uptiq.ai' },
+  emailPreferences: {
+    dailyDigest: { type: Boolean, default: true },
+    aiAlerts: { type: Boolean, default: true },
+    marketing: { type: Boolean, default: false }
+  }
 }, {
   timestamps: true
 });

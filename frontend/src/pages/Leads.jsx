@@ -1,24 +1,37 @@
 import { useState, useEffect } from 'react';
 import { Mail, Search, Sparkles, Plus, MoreHorizontal } from 'lucide-react';
 import api from '../services/api';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Leads = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [generatingFor, setGeneratingFor] = useState(null);
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newLead, setNewLead] = useState({
+    name: '',
+    email: '',
+    company: '',
+    status: 'New',
+    source: 'Website'
+  });
+
+  const fetchLeads = async () => {
+    try {
+      const { data } = await api.get('/leads');
+      setLeads(data);
+    } catch (error) {
+      console.error("Error fetching leads:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchLeads = async () => {
-      try {
-        const { data } = await api.get('/leads');
-        setLeads(data);
-      } catch (error) {
-        console.error("Error fetching leads:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchLeads();
   }, []);
 
@@ -37,13 +50,40 @@ const Leads = () => {
     }
   };
 
-  const handleGenerateEmail = (id) => {
+  const handleGenerateEmail = async (id) => {
     setGeneratingFor(id);
-    // Simulate AI generation time
-    setTimeout(() => {
+    try {
+      const { data } = await api.post(`/ai/lead/${id}/email`, { 
+        context: 'Write a warm, professional introduction email to schedule a 15 min discovery call.' 
+      });
+      alert('AI Email Draft Generated:\n\n' + data.draft);
+    } catch (error) {
+      console.error("Error generating email:", error);
+      alert('Failed to generate email.');
+    } finally {
       setGeneratingFor(null);
-      alert('AI Email Draft Generated! Check the Lead Details panel.');
-    }, 2000);
+    }
+  };
+
+  const handleAddLead = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      // Create lead, which automatically creates a pipeline deal on the backend
+      const res = await api.post('/leads', newLead);
+      
+      // Auto-trigger AI scoring for the new lead in the background
+      api.post(`/ai/lead/${res.data._id}/score`).then(() => fetchLeads()).catch(console.error);
+
+      await fetchLeads();
+      setIsModalOpen(false);
+      setNewLead({ name: '', email: '', company: '', status: 'New', source: 'Website' });
+    } catch (error) {
+      console.error("Error adding lead:", error);
+      alert('Failed to add lead. ' + (error.response?.data?.message || ''));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -64,7 +104,10 @@ const Leads = () => {
               className="pl-9 pr-4 py-2 bg-gray-900 border border-gray-700/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-200 w-64 transition-all"
             />
           </div>
-          <button className="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-primary-500/20 flex items-center text-sm">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-primary-500/20 flex items-center text-sm"
+          >
             <Plus className="h-4 w-4 mr-2" /> 
             Add Lead
           </button>
@@ -145,16 +188,130 @@ const Leads = () => {
           </tbody>
         </table>
         
-        {filteredLeads.length === 0 && (
+        {filteredLeads.length === 0 && !loading && (
           <div className="p-12 text-center flex flex-col items-center">
             <div className="h-12 w-12 rounded-full bg-gray-800 flex items-center justify-center mb-3">
               <Search className="h-5 w-5 text-gray-500" />
             </div>
             <h3 className="text-gray-300 font-medium text-sm">No leads found</h3>
-            <p className="text-gray-500 text-xs mt-1">Try adjusting your search query.</p>
+            <p className="text-gray-500 text-xs mt-1">Try adding a new lead to get started.</p>
           </div>
         )}
       </div>
+
+      {/* Add Lead Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-700/50 flex justify-between items-center bg-gray-800/50">
+                <h3 className="text-xl font-bold text-white tracking-tight">Add New Lead</h3>
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <form onSubmit={handleAddLead} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Full Name *</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={newLead.name}
+                    onChange={e => setNewLead({...newLead, name: e.target.value})}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="E.g. Siddharth Sharma"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Email Address *</label>
+                  <input 
+                    type="email"
+                    required 
+                    value={newLead.email}
+                    onChange={e => setNewLead({...newLead, email: e.target.value})}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="siddharth@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Company / Organization *</label>
+                  <input 
+                    type="text"
+                    required 
+                    value={newLead.company}
+                    onChange={e => setNewLead({...newLead, company: e.target.value})}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="E.g. Tata Consultancy Services"
+                  />
+                </div>
+
+                <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                    <select 
+                      value={newLead.status}
+                      onChange={e => setNewLead({...newLead, status: e.target.value})}
+                      className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="New">New</option>
+                      <option value="Contacted">Contacted</option>
+                      <option value="Qualified">Qualified</option>
+                      <option value="Meeting Scheduled">Meeting Scheduled</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Source</label>
+                    <select 
+                      value={newLead.source}
+                      onChange={e => setNewLead({...newLead, source: e.target.value})}
+                      className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="Website">Website</option>
+                      <option value="Referral">Referral</option>
+                      <option value="LinkedIn">LinkedIn</option>
+                      <option value="Cold Call">Cold Call</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex justify-end space-x-3">
+                  <button 
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2.5 text-sm font-medium text-gray-300 hover:text-white transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-primary-600 hover:bg-primary-500 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-lg shadow-primary-500/20 disabled:opacity-50 flex items-center"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Sparkles className="animate-spin h-4 w-4 mr-2" />
+                        Saving...
+                      </>
+                    ) : 'Save Customer'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

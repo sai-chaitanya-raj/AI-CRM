@@ -13,6 +13,12 @@ const Settings = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [password, setPassword] = useState('');
   
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [twoFactorToken, setTwoFactorToken] = useState('');
+  const [twoFactorError, setTwoFactorError] = useState('');
+  const [verifying2FA, setVerifying2FA] = useState(false);
+  
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -54,6 +60,7 @@ const Settings = () => {
             marketing: !!data.emailPreferences.marketing
           }));
         }
+        setSecurity(prev => ({ ...prev, twoFactor: !!data.isTwoFactorEnabled }));
       } catch (error) {
         console.error("Failed to load profile:", error);
       } finally {
@@ -66,6 +73,40 @@ const Settings = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleTwoFactorToggle = async () => {
+    try {
+      if (!security.twoFactor) {
+        const { data } = await api.post('/auth/2fa/generate');
+        setQrCodeUrl(data.qrCodeUrl);
+        setShow2FAModal(true);
+      } else {
+        if (window.confirm("Are you sure you want to disable Two-Factor Authentication?")) {
+          await api.post('/auth/2fa/disable');
+          setSecurity({ ...security, twoFactor: false });
+          alert('2FA disabled successfully.');
+        }
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to update 2FA settings.');
+    }
+  };
+
+  const handleVerify2FA = async () => {
+    try {
+      setVerifying2FA(true);
+      setTwoFactorError('');
+      await api.post('/auth/2fa/verify', { token: twoFactorToken });
+      setSecurity({ ...security, twoFactor: true });
+      setShow2FAModal(false);
+      setTwoFactorToken('');
+      alert('2FA successfully enabled!');
+    } catch (error) {
+      setTwoFactorError(error.response?.data?.message || 'Invalid code.');
+    } finally {
+      setVerifying2FA(false);
+    }
   };
 
   const handleSaveInitiate = () => {
@@ -255,7 +296,7 @@ const Settings = () => {
                     <p className="text-sm text-gray-500 mt-1">Add an extra layer of security to your account.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" checked={security.twoFactor} onChange={() => setSecurity({...security, twoFactor: !security.twoFactor})} />
+                    <input type="checkbox" className="sr-only peer" checked={security.twoFactor} onChange={() => handleTwoFactorToggle()} />
                     <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
                   </label>
                 </div>
@@ -310,6 +351,46 @@ const Settings = () => {
                 className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors text-sm font-medium disabled:opacity-50 flex items-center"
               >
                 {saving ? 'Saving...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2FA Quick Setup Modal */}
+      {show2FAModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 text-center">
+            <h3 className="text-xl font-bold text-white mb-2">Enable 2FA</h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Scan this QR code with your authenticator app (like Google Authenticator or Authy).
+            </p>
+            {qrCodeUrl ? (
+              <img src={qrCodeUrl} alt="2FA QR Code" className="mx-auto border-4 border-white rounded-lg mb-4" />
+            ) : (
+              <div className="h-48 w-48 mx-auto bg-gray-800 rounded-lg animate-pulse mb-4"></div>
+            )}
+            <input 
+              type="text" 
+              placeholder="Enter 6-digit code"
+              value={twoFactorToken}
+              onChange={(e) => setTwoFactorToken(e.target.value.replace(/\D/g, '').substring(0, 6))}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white text-center tracking-[0.2em] mb-2 focus:ring-2 focus:ring-primary-500 focus:outline-none"
+            />
+            {twoFactorError && <p className="text-red-500 text-sm mb-4">{twoFactorError}</p>}
+            <div className="flex justify-between space-x-3 mt-4">
+              <button 
+                onClick={() => { setShow2FAModal(false); setTwoFactorToken(''); }}
+                className="w-1/2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors font-medium text-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleVerify2FA}
+                disabled={verifying2FA || twoFactorToken.length < 6}
+                className="w-1/2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                {verifying2FA ? 'Verifying...' : 'Verify & Enable'}
               </button>
             </div>
           </div>

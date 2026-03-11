@@ -4,6 +4,8 @@ const { OAuth2Client } = require('google-auth-library');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const mailService = require('../services/mailService');
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -49,12 +51,36 @@ exports.authUser = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
+    
+    // Check if 2FA is enabled
+    if (user.isTwoFactorEnabled) {
+      if (!req.body.twoFactorCode) {
+        // User needs to provide 2FA code
+        return res.json({ requires2FA: true, email: user.email });
+      } else {
+        // Verify the provided 2FA code
+        const verified = speakeasy.totp.verify({
+          secret: user.twoFactorSecret,
+          encoding: 'base32',
+          token: req.body.twoFactorCode,
+          window: 1 // Allow 30 seconds of drift
+        });
+
+        if (!verified) {
+          return res.status(401).json({ message: 'Invalid 2FA code' });
+        }
+      }
+    }
+
+      // Normal successful login (or successful 2FA login)
       res.json({
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        authProvider: user.authProvider,
+        company: user.company,
+        hasCustomPassword: user.hasCustomPassword,
+        isTwoFactorEnabled: user.isTwoFactorEnabled,
         token: generateToken(user._id),
       });
     } else {
@@ -102,6 +128,77 @@ exports.googleLogin = async (req, res) => {
     });
   } catch (error) {
     res.status(401).json({ message: 'Google Authentication failed' });
+  }
+};
+
+// @desc    Generate 2FA Secret and QR Code
+// @route   POST /api/auth/2fa/generate
+// @access  Private
+exports.generate2FA = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    // Generate secret
+    const secret = speakeasy.generateSecret({ 
+      name: `Nova CRM (${user.email})` 
+    });
+
+    user.twoFactorSecret = secret.base32;
+    await user.save();
+
+    // Generate QR code Data URL
+    QRCode.toDataURL(secret.otpauth_url, (err, dataUrl) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error generating QR code' });
+      }
+      res.json({ qrCodeUrl: dataUrl, secret: secret.base32 });
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Verify 2FA Token and Enable 2FA
+// @route   POST /api/auth/2fa/verify
+// @access  Private
+exports.verify2FA = async (req, res) => {
+  try {
+    const { token } = req.body;
+    const user = await User.findById(req.user._id);
+
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token,
+      window: 1
+    });
+
+    if (verified) {
+      user.isTwoFactorEnabled = true;
+      await user.save();
+      res.json({ success: true, message: '2FA has been successfully enabled' });
+    } else {
+      res.status(400).json({ message: 'Invalid authentication code' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Disable 2FA
+// @route   POST /api/auth/2fa/disable
+// @access  Private
+exports.disable2FA = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    
+    user.isTwoFactorEnabled = false;
+    user.twoFactorSecret = '';
+    await user.save();
+    
+    res.json({ success: true, message: '2FA has been disabled' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 

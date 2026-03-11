@@ -11,6 +11,8 @@ const userSchema = new mongoose.Schema({
   resetPasswordToken: String,
   resetPasswordExpire: Date,
   company: { type: String, default: '' },
+  twoFactorSecret: { type: String, default: '' },
+  isTwoFactorEnabled: { type: Boolean, default: false },
   emailPreferences: {
     dailyDigest: { type: Boolean, default: true },
     aiAlerts: { type: Boolean, default: true },

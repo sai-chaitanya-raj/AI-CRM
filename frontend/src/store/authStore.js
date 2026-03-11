@@ -6,16 +6,21 @@ const useAuthStore = create((set) => ({
   token: localStorage.getItem('token') || null,
   isAuthenticated: !!localStorage.getItem('token'),
   
-  // Normal Login (Fallback)
-  login: async (email, password) => {
+  // Normal Login (Fallback to 2FA if required)
+  login: async (email, password, twoFactorCode = '') => {
     try {
-      const { data } = await api.post('/auth/login', { email, password });
+      const { data } = await api.post('/auth/login', { email, password, twoFactorCode });
+      
+      if (data.requires2FA) {
+        return { success: true, requires2FA: true };
+      }
+
       localStorage.setItem('token', data.token);
       set({ user: data, token: data.token, isAuthenticated: true });
-      return true;
+      return { success: true, requires2FA: false };
     } catch (error) {
       console.error('Login Failed', error);
-      return false;
+      return { success: false, error: error.response?.data?.message || 'Login failed' };
     }
   },
 
@@ -24,10 +29,10 @@ const useAuthStore = create((set) => ({
       const { data } = await api.post('/auth/register', { name, email, password });
       localStorage.setItem('token', data.token);
       set({ user: data, token: data.token, isAuthenticated: true });
-      return true;
+      return { success: true };
     } catch (error) {
       console.error('Registration Failed', error);
-      return false;
+      return { success: false, error: 'Registration failed. Email might be in use.' };
     }
   },
 
@@ -37,10 +42,10 @@ const useAuthStore = create((set) => ({
       const { data } = await api.post('/auth/google', { token: credential });
       localStorage.setItem('token', data.token);
       set({ user: data, token: data.token, isAuthenticated: true });
-      return true;
+      return { success: true };
     } catch (error) {
       console.error('Google Login Error', error);
-      return false;
+      return { success: false, error: 'Google Authentication failed.' };
     }
   },
 

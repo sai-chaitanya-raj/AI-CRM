@@ -7,6 +7,8 @@ import Login from './pages/Login';
 import Tasks from './pages/Tasks';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -14,6 +16,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
         
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Layout />}>

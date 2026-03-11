@@ -62,7 +62,10 @@ const Sidebar = () => {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-medium text-gray-200">{user?.name || 'User'}</span>
-            <span className="text-xs text-gray-500">{user?.company || 'Uptiq.ai'}</span>
+            <span className="text-xs text-gray-400">{user?.email || 'user@example.com'}</span>
+            {user?.company && (
+              <span className="text-xs text-gray-500 mt-0.5 font-medium">{user.company}</span>
+            )}
           </div>
         </Link>
       </div>

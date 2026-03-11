@@ -10,12 +10,13 @@ class MailService {
   }
 
   async init() {
-    if (process.env.EMAIL_USER && process.env.EMAIL_APP_PASSWORD) {
+    const emailPass = process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
+    if (process.env.EMAIL_USER && emailPass) {
       this.transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
           user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_APP_PASSWORD
+          pass: emailPass
         }
       });
       console.log('Production Mailer initialized with Gmail.');

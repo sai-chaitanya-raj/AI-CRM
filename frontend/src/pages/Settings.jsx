@@ -18,7 +18,8 @@ const Settings = () => {
     email: '',
     company: '',
     role: 'user',
-    authProvider: 'local'
+    authProvider: 'local',
+    hasCustomPassword: true
   });
 
   const [emailPrefs, setEmailPrefs] = useState({
@@ -44,7 +45,8 @@ const Settings = () => {
           email: data.email || '',
           company: data.company || '',
           role: data.role || 'user',
-          authProvider: data.authProvider || 'local'
+          authProvider: data.authProvider || 'local',
+          hasCustomPassword: data.hasCustomPassword !== false
         });
         if (data.emailPreferences) {
           setEmailPrefs(prev => ({
@@ -95,7 +97,7 @@ const Settings = () => {
         }
       };
 
-      if (profile.authProvider === 'google') {
+      if (!profile.hasCustomPassword) {
         updateData.password = password; // Set password for the first time
       } else {
         updateData.currentPassword = password; // Validate current password
@@ -282,16 +284,16 @@ const Settings = () => {
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95">
             <h3 className="text-xl font-bold text-white mb-2 flex items-center">
               <Key className="h-5 w-5 mr-2 text-primary-500" />
-              {profile.authProvider === 'google' ? 'Set Password' : 'Confirm Action'}
+              {!profile.hasCustomPassword ? 'Set Password' : 'Confirm Action'}
             </h3>
             <p className="text-gray-400 text-sm mb-6">
-              {profile.authProvider === 'google' 
+              {!profile.hasCustomPassword 
                 ? "As a Google Auth user, please set a password to save profile changes. You can use this later to login manually."
                 : "Please enter your current password to save these changes to your profile."}
             </p>
             <input 
               type="password" 
-              placeholder={profile.authProvider === 'google' ? "Enter new password" : "Confirm current Password"}
+              placeholder={!profile.hasCustomPassword ? "Enter new password" : "Confirm current Password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white mb-6 focus:ring-2 focus:ring-primary-500 focus:outline-none"

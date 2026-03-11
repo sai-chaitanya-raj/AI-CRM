@@ -8,7 +8,6 @@ const COLUMNS = ['New Lead', 'Contacted', 'Meeting Scheduled', 'Negotiation', 'C
 
 const Pipelines = () => {
   const [columns, setColumns] = useState(COLUMNS.reduce((acc, col) => ({ ...acc, [col]: [] }), {}));
-  const [loading, setLoading] = useState(true);
   const [isSorting, setIsSorting] = useState(false);
 
   useEffect(() => {
@@ -17,7 +16,6 @@ const Pipelines = () => {
 
   const fetchDeals = async () => {
     try {
-      setLoading(true);
       const { data } = await api.get('/deals');
       
       const organizedData = COLUMNS.reduce((acc, col) => ({ ...acc, [col]: [] }), {});
@@ -39,8 +37,6 @@ const Pipelines = () => {
       setColumns(organizedData);
     } catch (error) {
       console.error("Error fetching deals:", error);
-    } finally {
-      setLoading(false);
     }
   };
 

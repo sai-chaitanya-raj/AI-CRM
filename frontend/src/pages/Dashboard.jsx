@@ -103,7 +103,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Overview</h1>
-          <p className="text-gray-400 text-sm mt-1">Here's what's happening with your pipeline today.</p>
+          <p className="text-gray-400 text-sm mt-1">Here&apos;s what&apos;s happening with your pipeline today.</p>
         </div>
         <div className="flex items-center space-x-2 bg-gray-800/50 border border-gray-700/50 px-4 py-2 rounded-lg text-sm text-gray-300 backdrop-blur-sm">
           <Calendar className="h-4 w-4 mr-2" />

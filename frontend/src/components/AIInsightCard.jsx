@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
+import PropTypes from 'prop-types';
 
 const AIInsightCard = ({ title, insight, confidence, className }) => {
   return (
@@ -28,6 +29,13 @@ const AIInsightCard = ({ title, insight, confidence, className }) => {
       </p>
     </motion.div>
   );
+};
+
+AIInsightCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  insight: PropTypes.string.isRequired,
+  confidence: PropTypes.number,
+  className: PropTypes.string,
 };
 
 export default AIInsightCard;

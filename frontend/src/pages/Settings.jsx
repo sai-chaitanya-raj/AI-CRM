@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { User, Bell, Shield, Paintbrush, LogOut, Save, Key, Mail, Moon, Sun, Monitor, AlertTriangle, Fingerprint } from 'lucide-react';
+import { User, Bell, Shield, LogOut, Save, Key, Mail, Fingerprint } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 const Settings = () => {
-  const { user, logout } = useAuthStore();
+  const { logout } = useAuthStore();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(true);
@@ -33,8 +33,6 @@ const Settings = () => {
     twoFactor: false,
     loginAlerts: true
   });
-
-  const [appearance, setAppearance] = useState('dark');
 
   useEffect(() => {
     const fetchProfile = async () => {

@@ -31,7 +31,7 @@ const ForgotPassword = () => {
             <Mail className="h-7 w-7 text-white" />
           </div>
           <h2 className="text-2xl font-bold text-white tracking-tight">Reset your password</h2>
-          <p className="text-gray-400 text-sm mt-2">Enter your email and we'll send you a link to reset your password.</p>
+          <p className="text-gray-400 text-sm mt-2">Enter your email and we&apos;ll send you a link to reset your password.</p>
         </div>
 
         {errorMsg && (

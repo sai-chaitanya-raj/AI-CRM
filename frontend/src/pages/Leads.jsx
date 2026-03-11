@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mail, Search, Sparkles, Plus, MoreHorizontal } from 'lucide-react';
+import { Mail, Search, Sparkles, Plus } from 'lucide-react';
 import api from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 

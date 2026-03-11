@@ -73,7 +73,7 @@ const Tasks = () => {
         ) : tasks.length === 0 ? (
           <div className="text-center p-12">
             <CheckSquare className="mx-auto h-12 w-12 text-gray-600 mb-4" />
-            <h3 className="text-gray-300 font-medium text-lg">You're all caught up!</h3>
+            <h3 className="text-gray-300 font-medium text-lg">You&apos;re all caught up!</h3>
             <p className="text-gray-500 text-sm mt-2">No pending tasks generated from your pipeline.</p>
           </div>
         ) : (

@@ -61,8 +61,15 @@ const Login = () => {
               <GoogleLogin
                 onSuccess={async (credentialResponse) => {
                   const result = await loginWithGoogle(credentialResponse.credential);
-                  if (result.success) navigate('/', { replace: true });
-                  else setErrorMsg(result.error);
+                  if (result.success) {
+                    if (result.requires2FA) {
+                      setRequires2FA(true);
+                    } else {
+                      navigate('/', { replace: true });
+                    }
+                  } else {
+                    setErrorMsg(result.error);
+                  }
                 }}
                 onError={() => setErrorMsg('Google Login initialization failed.')}
                 theme="filled_black"

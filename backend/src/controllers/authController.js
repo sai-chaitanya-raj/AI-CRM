@@ -97,10 +97,10 @@ exports.googleLogin = async (req, res) => {
   try {
     const { token } = req.body;
     
-    // Verify Google Token (Disable audience check if no client ID is set yet so it doesn't crash during demo setup)
+    // Verify Google Token
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID || undefined,
+      audience: process.env.GOOGLE_CLIENT_ID,
     });
     
     const { name, email, sub } = ticket.getPayload();
@@ -118,16 +118,28 @@ exports.googleLogin = async (req, res) => {
       });
     }
 
+    // Check if 2FA is enabled for this user
+    if (user.isTwoFactorEnabled) {
+      return res.json({ 
+        requires2FA: true, 
+        email: user.email 
+      });
+    }
+
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
+      company: user.company,
       authProvider: user.authProvider,
+      isTwoFactorEnabled: user.isTwoFactorEnabled,
+      hasCustomPassword: user.hasCustomPassword,
       token: generateToken(user._id),
     });
   } catch (error) {
-    res.status(401).json({ message: 'Google Authentication failed' });
+    console.error('Google Login Backend Error:', error);
+    res.status(401).json({ message: 'Google Authentication failed', error: error.message });
   }
 };
 

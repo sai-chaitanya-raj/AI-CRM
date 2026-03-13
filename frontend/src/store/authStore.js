@@ -40,12 +40,17 @@ const useAuthStore = create((set) => ({
   loginWithGoogle: async (credential) => {
     try {
       const { data } = await api.post('/auth/google', { token: credential });
+      
+      if (data.requires2FA) {
+        return { success: true, requires2FA: true };
+      }
+
       localStorage.setItem('token', data.token);
       set({ user: data, token: data.token, isAuthenticated: true });
-      return { success: true };
+      return { success: true, requires2FA: false };
     } catch (error) {
       console.error('Google Login Error', error);
-      return { success: false, error: 'Google Authentication failed.' };
+      return { success: false, error: error.response?.data?.message || 'Google Authentication failed.' };
     }
   },
 

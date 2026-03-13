@@ -2,7 +2,7 @@
 
 Uptiq.ai is a modern, AI-integrated Customer Relationship Management (CRM) platform designed to streamline lead management, pipeline tracking, and sales analytics. Leveraging AI insights via the Groq SDK, it provides intelligent suggestions and data-driven perspectives to enhance sales productivity.
 
-## 🚀 Key Features
+##  Key Features
 
 - **Smart Dashboard**: Real-time overview of key performance indicators and recent activities.
 - **Lead & Pipeline Management**: Effortlessly track leads through customizable pipeline stages with drag-and-drop support.
@@ -11,7 +11,7 @@ Uptiq.ai is a modern, AI-integrated Customer Relationship Management (CRM) platf
 - **Secure Authentication**: Robust security with JWT-based sessions, Google OAuth integration, and Two-Factor Authentication (2FA).
 - **Responsive Design**: A premium, mobile-first user interface built with Tailwind CSS.
 
-## 🛠️ Technical Stack
+##  Technical Stack
 
 - **Frontend**:
   - React (Vite)
@@ -26,7 +26,7 @@ Uptiq.ai is a modern, AI-integrated Customer Relationship Management (CRM) platf
   - Jose/JWT (Security)
   - Nodemailer (Email verification)
 
-## 📦 Getting Started
+##  Getting Started
 
 ### Prerequisites
 

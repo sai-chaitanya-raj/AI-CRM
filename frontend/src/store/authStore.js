@@ -32,7 +32,7 @@ const useAuthStore = create((set) => ({
       return { success: true };
     } catch (error) {
       console.error('Registration Failed', error);
-      return { success: false, error: 'Registration failed. Email might be in use.' };
+      return { success: false, error: error.response?.data?.message || 'Registration failed.' };
     }
   },
 

@@ -57,6 +57,3 @@ Uptiq.ai is a modern, AI-integrated Customer Relationship Management (CRM) platf
    npm run dev
    ```
 
-## 📄 License
-
-This project is licensed under the ISC License.
